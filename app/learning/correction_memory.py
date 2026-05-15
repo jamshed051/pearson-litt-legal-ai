@@ -54,6 +54,9 @@ from app.config import (
     LLM_PROVIDER,
     OPENAI_API_KEY,
     OPENAI_MODEL,
+    OPENROUTER_API_KEY,
+    OPENROUTER_MODEL,
+    OPENROUTER_BASE_URL,
 )
 
 logger = logging.getLogger(__name__)
@@ -98,7 +101,23 @@ def _extract_patterns_llm(original: str, edited: str) -> list[dict]:
     user = PATTERN_EXTRACTION_USER.format(original=original[:3000], edited=edited[:3000])
 
     try:
-        if LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
+        if LLM_PROVIDER == "openrouter" and OPENROUTER_API_KEY:
+            from openai import OpenAI
+            client = OpenAI(api_key=OPENROUTER_API_KEY, base_url=OPENROUTER_BASE_URL)
+            response = client.chat.completions.create(
+                model=OPENROUTER_MODEL,
+                max_tokens=1024,
+                messages=[
+                    {"role": "system", "content": PATTERN_EXTRACTION_SYSTEM},
+                    {"role": "user", "content": user},
+                ],
+                extra_headers={
+                    "HTTP-Referer": "https://github.com/jamshed051/pearson-litt-legal-ai",
+                    "X-Title": "Legal Draft Assistant MVP",
+                },
+            )
+            raw = response.choices[0].message.content
+        elif LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
             import anthropic
             client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
             msg = client.messages.create(

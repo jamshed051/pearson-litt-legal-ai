@@ -30,6 +30,9 @@ from app.config import (
     LLM_PROVIDER,
     OPENAI_API_KEY,
     OPENAI_MODEL,
+    OPENROUTER_API_KEY,
+    OPENROUTER_MODEL,
+    OPENROUTER_BASE_URL,
 )
 from app.retrieval.index import RetrievedChunk
 
@@ -129,6 +132,29 @@ def _call_openai(system: str, user: str) -> str:
     return response.choices[0].message.content
 
 
+def _call_openrouter(system: str, user: str) -> str:
+    """Call any model via OpenRouter using the OpenAI-compatible API."""
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=OPENROUTER_API_KEY,
+        base_url=OPENROUTER_BASE_URL,
+    )
+    response = client.chat.completions.create(
+        model=OPENROUTER_MODEL,
+        max_tokens=2048,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        extra_headers={
+            "HTTP-Referer": "https://github.com/jamshed051/pearson-litt-legal-ai",
+            "X-Title": "Legal Draft Assistant MVP",
+        },
+    )
+    return response.choices[0].message.content
+
+
 def _call_mock(system: str, user: str, chunks: list[RetrievedChunk], doc_id: str) -> str:
     """
     Mock LLM for testing without an API key.
@@ -216,14 +242,16 @@ def generate_draft(
     )
 
     # ── Call LLM ──────────────────────────────────────────────────────────────
-    if LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
+    if LLM_PROVIDER == "openrouter" and OPENROUTER_API_KEY:
+        draft_text = _call_openrouter(system, user_prompt)
+    elif LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
         draft_text = _call_anthropic(system, user_prompt)
     elif LLM_PROVIDER == "openai" and OPENAI_API_KEY:
         draft_text = _call_openai(system, user_prompt)
     else:
         logger.warning(
             "No API key configured — using mock generation. "
-            "Set ANTHROPIC_API_KEY in .env for real output."
+            "Set OPENROUTER_API_KEY in .env for real output."
         )
         draft_text = _call_mock(system, user_prompt, chunks, doc_id)
 

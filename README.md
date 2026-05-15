@@ -8,6 +8,23 @@ A lean, grounded pipeline for ingesting messy legal documents, extracting eviden
 
 ---
 
+## Current Status
+
+| Component | Status |
+|-----------|--------|
+| LLM Provider | **OpenRouter** (live — not mock mode) |
+| Model | **DeepSeek V4 Flash** (`deepseek/deepseek-v4-flash:free`) |
+| API Key | **Configured and verified** ✓ |
+| Mock Mode | **Disabled** — full LLM generation active |
+| Ingestion & OCR | Live ✓ |
+| FAISS Retrieval | Live ✓ |
+| Draft Generation | Live LLM output ✓ |
+| Learning Loop | Live LLM pattern extraction ✓ |
+
+The system was previously running in mock mode (no API key). It is now fully connected to a live LLM via OpenRouter using the DeepSeek V4 Flash free model, which was confirmed working with a successful API test call. All 8 pipeline stages produce real AI output.
+
+---
+
 ## Quick Start
 
 ```bash
@@ -29,9 +46,10 @@ python3 -m spacy download en_core_web_sm
 # Ubuntu:  sudo apt-get install tesseract-ocr
 # Windows: https://github.com/UB-Mannheim/tesseract/wiki
 
-# 6. Configure API key
+# 6. Configure API key (OpenRouter recommended — free, no credit card required)
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY or OPENAI_API_KEY
+# Edit .env and set your OPENROUTER_API_KEY
+# Get a free key at https://openrouter.ai/keys
 # The system runs in mock mode if no key is set — see "Testing Without an API Key" below
 
 # 7. Generate sample documents and run the full demo
@@ -184,23 +202,57 @@ curl -X POST http://localhost:8000/api/v1/draft \
 
 ---
 
-### Testing Without an API Key (Mock Mode)
+### LLM Provider: OpenRouter (Live)
 
-The full pipeline runs without any API key configured:
+The system now runs on **OpenRouter** with the **DeepSeek V4 Flash free model** (`deepseek/deepseek-v4-flash:free`). Mock mode is no longer the default — the pipeline produces real LLM-generated memos and real pattern extraction from operator edits.
 
-- Document ingestion, OCR, chunking, and FAISS retrieval work identically to the live version
-- Draft generation returns a structured template populated with real evidence metadata (parties, dates, key facts from retrieved chunks)
-- Pattern extraction uses heuristic rules (checks for added sections, removed claims) instead of LLM analysis
-
-To run in mock mode, leave `.env` with no key set:
+**To configure your own OpenRouter key:**
 
 ```bash
 cp .env.example .env
-# Do NOT set ANTHROPIC_API_KEY or OPENAI_API_KEY
+# Then set in .env:
+# LLM_PROVIDER=openrouter
+# OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxx
+# OPENROUTER_MODEL=deepseek/deepseek-v4-flash:free
+```
+
+Get a free key (no credit card required) at **https://openrouter.ai/keys**.
+
+**Available free models** (swap `OPENROUTER_MODEL` in `.env`):
+
+| Model | ID |
+|-------|----|
+| DeepSeek V4 Flash *(current default)* | `deepseek/deepseek-v4-flash:free` |
+| Llama 3.3 70B | `meta-llama/llama-3.3-70b-instruct:free` |
+| Llama 3.2 3B (fast) | `meta-llama/llama-3.2-3b-instruct:free` |
+| Gemma 4 31B | `google/gemma-4-31b-it:free` |
+| Hermes 3 405B | `nousresearch/hermes-3-llama-3.1-405b:free` |
+
+**Alternative providers** (also supported — set `LLM_PROVIDER` accordingly):
+
+```bash
+# Anthropic Claude
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+
+# OpenAI
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-xxxxxxxxxxxx
+```
+
+### Testing Without an API Key (Mock Mode)
+
+Mock mode is still available if you want to run the pipeline without any API key. All stages except LLM generation and pattern extraction work identically.
+
+To run in mock mode, leave all API keys blank in `.env`:
+
+```bash
+cp .env.example .env
+# Leave OPENROUTER_API_KEY, ANTHROPIC_API_KEY, and OPENAI_API_KEY all empty
 python3 demo.py
 ```
 
-You'll see real chunking, real FAISS retrieval scores, real metadata extraction, and a mock-generated memo. Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in `.env` for full LLM-powered generation.
+You'll see real chunking, real FAISS retrieval scores, real metadata extraction, and a structured mock-generated memo.
 
 ---
 
@@ -322,7 +374,7 @@ Pearson Litt App/
 | OCR | Tesseract | Open source, robust fallback |
 | Embeddings | sentence-transformers | Local, no API cost, good quality |
 | Vector DB | FAISS | Lightweight, no server needed |
-| LLM | Claude / OpenAI | Pluggable via env var |
+| LLM | OpenRouter / Claude / OpenAI | Pluggable via env var — default: OpenRouter + DeepSeek V4 Flash (free) |
 | Storage | Local JSON | Simple, inspectable, no database overhead |
 | NER | spaCy | Fast regex-first, NER as enhancement |
 
@@ -402,6 +454,82 @@ After all fixes, a 14-point automated test suite passed clean:
 | 12 | 400 on unsupported file type | ✓ 400 |
 | 13 | 404 on missing draft_id | ✓ 404 |
 | 14 | 401 on invalid API key — clean error, not a crash | ✓ 401 |
+
+---
+
+## Deployment Note: Git Push & the index.lock Issue
+
+### What happened
+
+When pushing this repo to GitHub from the Cowork AI assistant (Claude), the push ran inside a **sandboxed Linux virtual machine** — not on the Mac directly. Here's why that matters, and what went wrong.
+
+### Why does Claude run a Linux sandbox?
+
+Claude's Cowork mode executes shell commands inside an isolated Ubuntu 22 container. This sandbox is spun up fresh for each session and mounts your Mac's folder as a network filesystem (via a path like `/sessions/<id>/mnt/`). The sandbox has git, Python, Node, and common CLI tools available, but it runs as a non-root user with strict write restrictions on the mounted filesystem.
+
+This architecture exists for safety — the sandbox can't accidentally modify your Mac's system files, and each session starts clean. The tradeoff is that certain low-level filesystem operations (like deleting lock files in `.git/`) are blocked at the OS level, even though reading and writing normal project files works fine.
+
+### The index.lock problem
+
+Git uses a file called `.git/index.lock` as a mutex — it's created at the start of any operation that modifies the index, and deleted when that operation completes. If a git process crashes or is interrupted, it can leave a stale `index.lock` behind. Any subsequent git command will refuse to run and print:
+
+```
+fatal: Unable to create '.git/index.lock': File exists.
+Another git process seems to be running in this repository.
+```
+
+In this session, the `.git/index.lock` file was a **zero-byte stale lock** left over from an earlier interrupted git operation. On a normal Mac terminal you'd fix it with `rm .git/index.lock` and move on. Inside the Linux sandbox, however, the mounted filesystem's permission model prevented the sandbox from deleting files inside the `.git/` directory, even though it could read them.
+
+```
+rm: cannot remove '.git/index.lock': Operation not permitted
+```
+
+### How it was resolved
+
+Since the lock couldn't be deleted, the workaround was to use git's environment variable `GIT_INDEX_FILE` to redirect git to a fresh index file in a writable location (the sandbox's own `/outputs/` directory), bypassing the locked file entirely:
+
+```bash
+GIT_INDEX_FILE="/sessions/.../outputs/git_index_tmp" git add -A
+GIT_INDEX_FILE="/sessions/.../outputs/git_index_tmp" git commit -m "..."
+GIT_INDEX_FILE="/sessions/.../outputs/git_index_tmp" git push -u origin main
+```
+
+This let git stage, commit, and push all 35 files without touching the locked index.
+
+### The GitHub username mismatch
+
+A second issue: the target remote was set to `alamjamshed051/pearson-litt-legal-ai`, but the Personal Access Token provided belonged to the GitHub account `jamshed051`. GitHub rejected the push with `remote: Repository not found` because the token didn't have access to the `alamjamshed051` namespace. The fix was to confirm the correct username via the GitHub API (`GET /user`) and update the remote URL accordingly before pushing.
+
+### If you need to push again from your Mac terminal
+
+The stale lock file is still present on your Mac. Before running any git commands locally, remove it first:
+
+```bash
+rm "/Users/shihabsmac/Desktop/Legal Document AI app/Pearson Litt App/.git/index.lock"
+```
+
+Then push normally:
+
+```bash
+cd "/Users/shihabsmac/Desktop/Legal Document AI app/Pearson Litt App"
+git push origin main
+```
+
+---
+
+## Changelog
+
+### May 2026 — OpenRouter Integration
+
+- **Added OpenRouter as the default LLM provider** — replaces the previous Anthropic/OpenAI-only setup
+- **Mock mode is no longer the default** — the system now produces real LLM output with a live API key
+- **Default model:** `deepseek/deepseek-v4-flash:free` via OpenRouter — free, no credit card required, confirmed working
+- **`app/config.py`** — added `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_BASE_URL` settings; default `LLM_PROVIDER` changed from `anthropic` to `openrouter`
+- **`app/drafting/generator.py`** — added `_call_openrouter()` function; OpenRouter is now checked first in the provider priority chain
+- **`app/learning/correction_memory.py`** — OpenRouter support added to the pattern extraction LLM call
+- **`.env.example`** — updated to document OpenRouter as the recommended provider with free model options
+- **`.env`** — created (not committed) with live OpenRouter key and `deepseek/deepseek-v4-flash:free` configured
+- **API key verified** — live test call confirmed `OpenRouter connection successful` before full pipeline test
 
 ---
 

@@ -25,11 +25,16 @@ for d in [DOCUMENTS_DIR, INDEXES_DIR, DRAFTS_DIR, EDITS_DIR, OUTPUTS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")  # "anthropic" | "openai"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")  # "anthropic" | "openai" | "openrouter"
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+# ── OpenRouter ────────────────────────────────────────────────────────────────
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-v4-flash:free")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # ── Embedding ──────────────────────────────────────────────────────────────────
 EMBEDDING_MODEL = os.getenv(
