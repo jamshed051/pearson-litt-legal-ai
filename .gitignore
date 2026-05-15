@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Environment secrets — NEVER commit your API keys
+.env
+
+# Data (generated at runtime — commit sample outputs only)
+data/documents/
+data/indexes/
+data/drafts/
+data/edits/
+data/correction_memory.json
+
+# Keep outputs (sample artifacts for reviewers)
+!outputs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/

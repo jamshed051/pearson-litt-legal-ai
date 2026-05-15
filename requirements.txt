@@ -1,0 +1,26 @@
+# Legal Draft Assistant MVP - Dependencies
+# Core
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+pydantic==2.7.1
+
+# Document Processing
+pymupdf==1.24.3
+pillow==10.3.0
+pytesseract==0.3.10
+
+# NLP & Embeddings
+sentence-transformers==2.7.0
+spacy==3.7.4
+
+# Vector Search
+faiss-cpu==1.8.0
+
+# LLM
+anthropic==0.26.0
+openai==1.30.0
+
+# Utilities
+python-dotenv==1.0.1
+numpy==1.26.4

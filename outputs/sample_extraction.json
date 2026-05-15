@@ -1,0 +1,51 @@
+{
+  "doc_id": "eviction_notice",
+  "document_type": "eviction_notice",
+  "parties": [
+    "Daniel J. Ross",
+    "Margaret A. Pearson"
+  ],
+  "dates": [
+    "March 8, 2025",
+    "January 15, 2023",
+    "December 1, 2024",
+    "January 1, 2025",
+    "February 1, 2025",
+    "February 15, 2025"
+  ],
+  "addresses": [],
+  "total_chars": 1553,
+  "page_count": 1,
+  "avg_ocr_confidence": 1.0,
+  "chunk_count": 4,
+  "chunks": [
+    {
+      "chunk_id": "eviction_notice_chunk_0000",
+      "source_page": 1,
+      "confidence": 1.0,
+      "char_count": 397,
+      "text_preview": "NOTICE TO PAY RENT OR QUIT\nDate: March 8, 2025\nTO: Daniel J. Ross\n 742 Evergreen Terrace, Apt 3B\n New York, NY 10028\nFROM: Margaret A. Pearson\n 1200 West 57th Street, Suite 400\n New York, NY 10019\nNOT"
+    },
+    {
+      "chunk_id": "eviction_notice_chunk_0001",
+      "source_page": 1,
+      "confidence": 1.0,
+      "char_count": 558,
+      "text_preview": "ted January 15, 2023, for the premises located at 742 Evergreen\nTerrace, Apt 3B, New York, NY 10028. AMOUNT OF RENT DUE:\n- December 2024 rent: $3,200.00 (due December 1, 2024 \u00b7 UNPAID)\n- January 2025 "
+    },
+    {
+      "chunk_id": "eviction_notice_chunk_0002",
+      "source_page": 1,
+      "confidence": 1.0,
+      "char_count": 570,
+      "text_preview": "YS of service of this notice, or to vacate and surrender possession of the above\ndescribed premises. IF YOU FAIL TO PAY THE RENT OR VACATE THE PREMISES within the time specified above,\nlegal proceedin"
+    },
+    {
+      "chunk_id": "eviction_notice_chunk_0003",
+      "source_page": 1,
+      "confidence": 1.0,
+      "char_count": 328,
+      "text_preview": "itchen cabinets and bathroom fixtures beyond\nnormal wear and tear. Estimated repair cost: $2,100.00. This notice was served by:\n[ ] Personal delivery\n[ ] Posting on door + mailing\n[X] Certified mail ("
+    }
+  ]
+}
